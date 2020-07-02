@@ -1,0 +1,48 @@
+{
+  "name": "scheduled-backup",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "rollup -c --watch",
+    "build": "rollup -c",
+    "start": "node ./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vlaoff/scheduled-backup.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vlaoff/scheduled-backup/issues"
+  },
+  "homepage": "https://github.com/Vlaoff/scheduled-backup#readme",
+  "dependencies": {
+    "@slack/webhook": "^5.0.3",
+    "axios": "^0.19.2",
+    "date-fns": "^2.14.0",
+    "fs": "0.0.1-security",
+    "lodash": "^4.17.15",
+    "lowdb": "^1.0.0",
+    "node-cron": "^2.0.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.10.4",
+    "@babel/preset-env": "^7.10.4",
+    "@nuxtjs/eslint-config-typescript": "^2.0.0",
+    "@types/lodash": "^4.14.157",
+    "eslint": "^7.3.1",
+    "rollup": "^2.18.1",
+    "rollup-plugin-auto-external": "^2.0.0",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-eslint": "^7.0.0",
+    "rollup-plugin-filesize": "^9.0.2",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-run": "^1.1.0",
+    "rollup-plugin-typescript2": "^0.27.1",
+    "typescript": "^3.9.6"
+  }
+}
