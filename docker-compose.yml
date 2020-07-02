@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  scheduled-backup:
+    build: .
+    container_name: scheduled-backup
+    volumes:
+      - ./config.js:/usr/src/app/config.js:ro
+      - ./rclone.conf:/config/rclone/rclone.conf
+      - ./.copyIgnore:/usr/src/app/.copyIgnore
+      - ./.deleteIgnore:/usr/src/app/.deleteIgnore
+      - ./data:/usr/src/app/data
