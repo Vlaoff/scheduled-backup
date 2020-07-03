@@ -1,29 +1,47 @@
 import { spawn } from 'child_process'
-import cron from 'node-cron'
 import fs from 'fs'
 import * as path from 'path'
+import { CronJob } from 'cron'
 import { IncomingWebhook } from '@slack/webhook'
+import pino from 'pino'
+import logflare from 'pino-logflare'
 
-let job
+let job: CronJob = null
+let logger = console
 
 const configFilePath = path.resolve('./config.js')
+
 fs.watch(configFilePath, () => {
   delete require.cache[configFilePath]
   initJob()
 })
 
 async function initJob () {
-  job && job.destroy()
+  job && job.stop()
 
   const config: Config = require(configFilePath)
-  console.log('init new job', config.cronSchedule)
+  if (config.logflareKey && config.logflareSource) {
+    const stream = logflare.createWriteStream({
+      apiKey: config.logflareKey,
+      source: config.logflareSource,
+      size: 1
+    })
+
+    logger = pino({}, stream)
+  }
+
 
   const webhook = new IncomingWebhook(config.slackWebhook)
 
-  job = cron.schedule(config.cronSchedule, async () => {
+  job = new CronJob(config.cronSchedule, async () => {
     await deleteOldFiles(config, webhook)
     await backupFiles(config, webhook)
+
+    logger.info(`job completed, next job at ${job.nextDate()}`)
   })
+  logger.info(`init new job ${config.cronSchedule}, next job at ${job.nextDate()}`)
+
+  job.start()
 }
 
 initJob()
@@ -69,27 +87,20 @@ function runCommand (
 ) {
   return new Promise(resolve => {
     const cmd = spawn('rclone', args)
-    console.log('launched command with args', args)
+    logger.info(`launched command with args ${args}`)
 
-    let log = []
     cmd.stdout.on('data', (data) => {
-      log.push({
-        type: 'stdout',
-        data: `${data}`
-      })
+      logger.info(`${data}`)
     })
 
     cmd.stderr.on('data', (data) => {
-      log.push({
-        type: 'stderr',
-        data: `${data}`
-      })
+      logger.info(`${data}`)
     })
 
     cmd.on('close', (code) => {
       if (code) {
-        console.log(log)
-        webhook.send(`${errorMessage} - exit code: ${code} \n \`${JSON.stringify(log)}\``)
+        logger.error(code)
+        webhook.send(`${errorMessage} - exit code: ${code}`)
       }
       resolve()
     })
@@ -102,4 +113,6 @@ type Config = {
   destinationDir: string
   filesRetention: string
   cronSchedule: string
+  logflareKey: string
+  logflareSource: string
 }

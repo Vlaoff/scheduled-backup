@@ -22,16 +22,19 @@
   "dependencies": {
     "@slack/webhook": "^5.0.3",
     "axios": "^0.19.2",
+    "cron": "^1.8.2",
     "date-fns": "^2.14.0",
     "fs": "0.0.1-security",
     "lodash": "^4.17.15",
     "lowdb": "^1.0.0",
-    "node-cron": "^2.0.3"
+    "pino": "^6.3.2",
+    "pino-logflare": "^0.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.10.4",
     "@babel/preset-env": "^7.10.4",
     "@nuxtjs/eslint-config-typescript": "^2.0.0",
+    "@types/cron": "^1.7.2",
     "@types/lodash": "^4.14.157",
     "eslint": "^7.3.1",
     "rollup": "^2.18.1",

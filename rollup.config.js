@@ -16,9 +16,9 @@ export default {
   },
   plugins: [
     autoExternal(),
-    // eslint({
-    //   fix: true
-    // }),
+    eslint({
+      fix: true
+    }),
     typescript({
       include: [
         './src/**/*.ts'
