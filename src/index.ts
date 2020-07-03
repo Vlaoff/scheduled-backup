@@ -34,6 +34,7 @@ async function initJob () {
   const webhook = new IncomingWebhook(config.slackWebhook)
 
   job = new CronJob(config.cronSchedule, async () => {
+    logger.info(`job launched`)
     await deleteOldFiles(config, webhook)
     await backupFiles(config, webhook)
 
@@ -94,14 +95,18 @@ function runCommand (
     })
 
     cmd.stderr.on('data', (data) => {
-      logger.info(`${data}`)
+      logger.error(`${data}`)
     })
 
     cmd.on('close', (code) => {
+      const logMessage = `closed with code ${code} --- ${args}`
       if (code) {
-        logger.error(code)
+        logger.error(logMessage)
         webhook.send(`${errorMessage} - exit code: ${code}`)
+      } else {
+        logger.info(logMessage)
       }
+
       resolve()
     })
   })
