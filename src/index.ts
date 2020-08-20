@@ -34,7 +34,6 @@ async function initJob () {
         if (!config.LOGDNA_KEY) {
           return
         }
-        console.log(msg)
         logdnaLogger && logdnaLogger.log(msg)
       }
     }
@@ -75,6 +74,9 @@ async function initJob () {
 
     logger.info(`job completed, next job at ${job.nextDate()}`)
   })
+
+  messageSender(`init new job ${config.cronSchedule}, next job at ${job.nextDate()}`, 'scheduled-backup')
+
   logger.info(`init new job ${config.cronSchedule}, next job at ${job.nextDate()}`)
 
   job.start()
