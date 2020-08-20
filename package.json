@@ -26,9 +26,11 @@
     "date-fns": "^2.14.0",
     "fs": "0.0.1-security",
     "lodash": "^4.17.15",
+    "logdna": "^3.5.1",
     "lowdb": "^1.0.0",
     "pino": "^6.3.2",
-    "pino-logflare": "^0.1.0"
+    "pino-logflare": "^0.1.0",
+    "zulip-js": "^2.0.8"
   },
   "devDependencies": {
     "@babel/core": "^7.10.4",

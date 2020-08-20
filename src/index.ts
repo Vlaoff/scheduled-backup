@@ -4,7 +4,8 @@ import * as path from 'path'
 import { CronJob } from 'cron'
 import { IncomingWebhook } from '@slack/webhook'
 import pino from 'pino'
-import logflare from 'pino-logflare'
+import logdna from 'logdna'
+import { getZulipClient, sendMessage } from '@/zulip'
 
 let job: CronJob = null
 let logger = console
@@ -17,26 +18,60 @@ fs.watch(configFilePath, () => {
 })
 
 async function initJob () {
+  console.log('init job')
   job && job.stop()
 
   const config: Config = require(configFilePath)
-  if (config.logflareKey && config.logflareSource) {
-    const stream = logflare.createWriteStream({
-      apiKey: config.logflareKey,
-      source: config.logflareSource,
-      size: 1
+
+  if (config.LOGDNA_KEY) {
+    const logdnaLogger = config.LOGDNA_KEY && logdna.createLogger(config.LOGDNA_KEY, {
+      env: 'production',
+      app: 'scheduled-backup'
     })
 
-    logger = pino({}, stream)
+    const logdnaTransport = {
+      write (msg: string) {
+        if (!config.LOGDNA_KEY) {
+          return
+        }
+        console.log(msg)
+        logdnaLogger && logdnaLogger.log(msg)
+      }
+    }
+
+    logger = pino({}, logdnaTransport)
   }
 
+  const slackNotifier = config.notifiers.find(x => x.type === 'slack')
+  const zulipNotifier = config.notifiers.find(x => x.type === 'zulip')
 
-  const webhook = new IncomingWebhook(config.slackWebhook)
+  const getSendMessage = async () => {
+    const webhook = slackNotifier
+      ? new IncomingWebhook(config.notifiers[0].webhook)
+      : null
+
+    const zulipClient = zulipNotifier
+      ? await getZulipClient()
+      : null
+
+    return async (content, topic?) => {
+      webhook && await webhook.send(content)
+      zulipClient && await sendMessage(zulipClient, {
+        to: zulipNotifier.to,
+        type: 'stream',
+        topic,
+        content
+      })
+    }
+  }
+
+  const messageSender = await getSendMessage()
+
 
   job = new CronJob(config.cronSchedule, async () => {
-    logger.info(`job launched`)
-    await deleteOldFiles(config, webhook)
-    await backupFiles(config, webhook)
+    logger.info('job launched')
+    await deleteOldFiles(config, messageSender)
+    await backupFiles(config, messageSender)
 
     logger.info(`job completed, next job at ${job.nextDate()}`)
   })
@@ -49,33 +84,35 @@ initJob()
 
 function deleteOldFiles (
   config: Config,
-  webhook: IncomingWebhook
+  sendMessage
 ) {
   return runCommand(
     [
       'delete',
+      '--tpslimit', '50',
       '--min-age', config.filesRetention,
       '--exclude-from', './.deleteIgnore',
       config.destinationDir
     ],
     config,
-    webhook,
+    sendMessage,
     'error while deleting'
   )
 }
 
 function backupFiles (
   config: Config,
-  webhook: IncomingWebhook
+  sendMessage
 ) {
   return runCommand(
     [
       'copy',
+      '--tpslimit', '50',
       '--exclude-from', './.copyIgnore',
       config.sourceDir, config.destinationDir
     ],
     config,
-    webhook,
+    sendMessage,
     'error while copying'
   )
 }
@@ -83,7 +120,7 @@ function backupFiles (
 function runCommand (
   args: any[],
   config: Config,
-  webhook: IncomingWebhook,
+  sendMessage,
   errorMessage: string
 ) {
   return new Promise(resolve => {
@@ -102,7 +139,7 @@ function runCommand (
       const logMessage = `closed with code ${code} --- ${args}`
       if (code) {
         logger.error(logMessage)
-        webhook.send(`${errorMessage} - exit code: ${code}`)
+        sendMessage(`${errorMessage} - exit code: ${code}`, 'scheduled-backup')
       } else {
         logger.info(logMessage)
       }
@@ -113,11 +150,15 @@ function runCommand (
 }
 
 type Config = {
-  slackWebhook: string
   sourceDir: string
   destinationDir: string
   filesRetention: string
   cronSchedule: string
-  logflareKey: string
-  logflareSource: string
+  LOGDNA_KEY?: string
+  notifiers: {
+    type: string
+    channel?: string
+    webhook?: string
+    to?: string
+  }[]
 }
