@@ -21,7 +21,7 @@
   "homepage": "https://github.com/Vlaoff/scheduled-backup#readme",
   "dependencies": {
     "@slack/webhook": "^5.0.3",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "cron": "^1.8.2",
     "date-fns": "^2.14.0",
     "fs": "0.0.1-security",
